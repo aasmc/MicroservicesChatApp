@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import ru.aasmc.chatapp.dto.Email;
 import ru.aasmc.chatapp.repository.EmailRepository;
 
+import java.time.Instant;
 import java.util.List;
 
 import static ru.aasmc.chatapp.dto.EmailStatus.NEW;
@@ -17,7 +18,8 @@ import static ru.aasmc.chatapp.dto.EmailStatus.SENT;
 @Service
 @RequiredArgsConstructor
 public class EmailService {
-    private static final PageRequest BATCH_SIZE = PageRequest.of(0, 2);
+    private static final int BATCH_SIZE = 2;
+    private static final int LOCK_FOR_MS = 120_000;
 
     private final EmailRepository emailRepo;
 
@@ -25,14 +27,18 @@ public class EmailService {
     public void sendEmails() {
         List<Email> emails;
 
-        while (!(emails = emailRepo.findAllByStatus(NEW.name(), BATCH_SIZE)).isEmpty()) {
+        while (!(emails = getNewEmails()).isEmpty()) {
             for (Email email : emails) {
                 // prepare email template
                 // send email
 
-                emailRepo.save(email.setStatus(SENT));
+                emailRepo.save(email.setStatus(SENT).setLockUntil(null));
                 log.info("Sent email with id={} to recipient={}", email.getId(), email.getRecipientId());
             }
         }
+    }
+
+    private List<Email> getNewEmails() {
+        return emailRepo.findAllByStatus(NEW.name(), Instant.now().plusMillis(LOCK_FOR_MS), BATCH_SIZE);
     }
 }

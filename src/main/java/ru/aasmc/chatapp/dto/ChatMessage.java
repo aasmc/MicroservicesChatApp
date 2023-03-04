@@ -4,11 +4,12 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
 @Table("chat_messages")
-public class ChatMessage {
+public class ChatMessage implements Serializable {
     @Id
     private Long id;
     private String chatId;

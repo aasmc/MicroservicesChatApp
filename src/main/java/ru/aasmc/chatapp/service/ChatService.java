@@ -30,10 +30,12 @@ public class ChatService {
     @CacheEvict(value = "chatMessages", key = "#result.chatId")
     public ChatMessage saveMessage(Long authorId, Long contactId, String text) {
         String chatId = Utils.chatId(authorId, contactId);
+
         ChatMessage msg = new ChatMessage()
                 .setChatId(chatId)
                 .setAuthorId(authorId)
                 .setText(text);
+
         return chatMessageRepo.save(msg);
     }
 

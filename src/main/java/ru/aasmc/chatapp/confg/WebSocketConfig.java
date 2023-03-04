@@ -23,6 +23,8 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 import org.springframework.web.socket.messaging.StompSubProtocolErrorHandler;
+import ru.aasmc.chatapp.confg.interceptor.EscapeSlashesInterceptor;
+import ru.aasmc.chatapp.confg.interceptor.LoggingInterceptor;
 import ru.aasmc.chatapp.service.SessionService;
 
 import java.util.EnumSet;
@@ -60,11 +62,13 @@ public class WebSocketConfig extends AbstractSecurityWebSocketMessageBrokerConfi
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.setPreservePublishOrder(true)
                 .setApplicationDestinationPrefixes(APP_PREFIXES)
-                .enableSimpleBroker(BROKER_PREFIXES)
-                .setHeartbeatValue(HEARTBEAT)
+                .enableStompBrokerRelay(BROKER_PREFIXES)
+                .setUserDestinationBroadcast("/topic/unresolved.user.dest")
+                .setUserRegistryBroadcast("/topic/registry.broadcast")
                 .setTaskScheduler(getHeartbeatScheduler());
 
         registry.configureBrokerChannel()
+                .interceptors(new LoggingInterceptor(), new EscapeSlashesInterceptor())
                 .taskExecutor()
                 .corePoolSize(1)
                 .maxPoolSize(MAX_WORKERS_COUNT)
@@ -74,7 +78,7 @@ public class WebSocketConfig extends AbstractSecurityWebSocketMessageBrokerConfi
     @Override
     protected void customizeClientInboundChannel(ChannelRegistration registration) {
         registration
-                .interceptors(sessionRepositoryInterceptor())
+                .interceptors(new LoggingInterceptor(), new EscapeSlashesInterceptor(), sessionRepositoryInterceptor())
                 .taskExecutor()
                 .corePoolSize(1)
                 .maxPoolSize(MAX_WORKERS_COUNT)
@@ -84,6 +88,7 @@ public class WebSocketConfig extends AbstractSecurityWebSocketMessageBrokerConfi
     @Override
     public void configureClientOutboundChannel(ChannelRegistration registration) {
         registration
+                .interceptors(new LoggingInterceptor())
                 .taskExecutor()
                 .corePoolSize(1)
                 .maxPoolSize(MAX_WORKERS_COUNT)
@@ -138,26 +143,3 @@ public class WebSocketConfig extends AbstractSecurityWebSocketMessageBrokerConfi
         return scheduler;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
